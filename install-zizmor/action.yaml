@@ -1,0 +1,54 @@
+name: Install Zizmor
+description: Installs a given Zizmor version into the PATH.
+
+inputs:
+  version:
+    description: The zizmor version to download.
+    default: v1.24.1
+
+  amd64-digest:
+    description: The SHA-256 digest for `zizmor-x86_64-unknown-linux-gnu.tar.gz`
+    default: a8000f3c683319a523d3b20df0e75457ba591f049cfcbfa98966631b56733c03
+
+  aarch64-digest:
+    description: The SHA-256 digest for `zizmor-aarch64-unknown-linux-gnu.tar.gz`
+    default: d66e37ef8a375fb07939c630ebf9709a6e0f20242bdc3faf672a7ed97e0b768d
+
+outputs:
+  install-dir:
+    description: The directory where Zizmor's executable is located
+    value: ${{ steps.prepare.outputs.install-dir }}
+  exe:
+    description: The path to Zizmor (executable file)
+    value: ${{ steps.prepare.outputs.executable-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Prepare
+      id: prepare
+      shell: bash
+      run: |
+        install_path="${RUNNER_TEMP}"/zizmor
+        mkdir -m0700 "$install_path"
+
+        {
+          echo "install-dir=$install_path"
+          echo "executable-path=${install_path}/zizmor"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Download & Install
+      shell: bash
+      env:
+        DL_VERSION: ${{ inputs.version }}
+        DL_AMD64_DIGEST: ${{ inputs.amd64-digest }}
+        DL_AARCH64_DIGEST: ${{ inputs.aarch64-digest }}
+        INSTALL_PATH: ${{ steps.prepare.outputs.install-dir }}
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        /usr/bin/bash "$GITHUB_ACTION_PATH"/install.sh \
+          --strict \
+          --version "$DL_VERSION" \
+          --amd64-digest "$DL_AMD64_DIGEST" \
+          --aarch64-digest "$DL_AARCH64_DIGEST" \
+          --target "$INSTALL_PATH"

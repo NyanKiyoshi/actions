@@ -1,0 +1,76 @@
+name: Test 'Install Zizmor'
+on:
+  pull_request:
+  push:
+
+permissions: {}
+
+jobs:
+  # Ensures that installing a given version works
+  test-install-given-version:
+    name: "Install specific version"
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # We only support 24.04, and anything more recent (if any)
+        # 22.04 is getting old and thus likely isn't worth supporting
+        os: [ubuntu-24.04, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Zizmor
+        id: zizmor
+        uses: ./install-zizmor
+        with:
+          # https://github.com/zizmorcore/zizmor/releases
+          version: v1.24.1
+          amd64-digest: a8000f3c683319a523d3b20df0e75457ba591f049cfcbfa98966631b56733c03
+          aarch64-digest: d66e37ef8a375fb07939c630ebf9709a6e0f20242bdc3faf672a7ed97e0b768d
+
+      - name: Test Zizmor is Usable
+        env:
+          ZIZMOR_EXE: ${{ steps.zizmor.outputs.exe }}
+        run: |
+          "$ZIZMOR_EXE" --help
+
+  # Ensures that installing whichever version is the current default works properly
+  # (i.e., we don't provide any inputs in the action)
+  test-install-default-version:
+    name: "Install specific version"
+
+    permissions:
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, ubuntu-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Zizmor
+        id: zizmor
+        uses: ./install-zizmor
+
+      # Shouldn't fail if zizmor was installed properly
+      - name: Test Zizmor is Usable
+        env:
+          ZIZMOR_EXE: ${{ steps.zizmor.outputs.exe }}
+        run: |
+          "$ZIZMOR_EXE" --help
